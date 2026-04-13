@@ -10,6 +10,8 @@ return {
   ---@type Gitsigns.Config
   ---@diagnostic disable-next-line: missing-fields
   opts = {
+    watch_gitdir = { interval = 1000 },
+    attach_to_untracked = false,
     on_attach = function(bufnr)
       local gitsigns = require 'gitsigns'
 

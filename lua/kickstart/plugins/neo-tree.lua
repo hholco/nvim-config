@@ -21,6 +21,7 @@ return {
     window = {
       width = 30,
     },
+    enable_git_status = false,
     filesystem = {
       window = {
         mappings = {
