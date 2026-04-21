@@ -195,6 +195,7 @@ vim.o.confirm = true
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+-- automatically run make and run executable associated
 vim.keymap.set('n', '<F4>', function()
   vim.cmd 'write'
   vim.cmd 'split | terminal cd %:p:h && make && ./main'
@@ -326,6 +327,17 @@ require('lazy').setup({
         changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
       },
     },
+  },
+
+  -- nvim neogit
+  {
+    'NeogitOrg/neogit',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'sindrets/diffview.nvim',
+      'nvim-telescope/telescope.nvim',
+    },
+    opts = {},
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
@@ -728,7 +740,7 @@ require('lazy').setup({
   { -- Autoformat
     'stevearc/conform.nvim',
     event = { 'BufWritePre' },
-    cmd = { 'ConformInfo' },
+    cmd = { 'ConformInfo', 'Format' },
     keys = {
       {
         '<leader>f',
@@ -737,37 +749,33 @@ require('lazy').setup({
         desc = '[F]ormat buffer',
       },
     },
-    ---@module 'conform'
-    ---@type conform.setupOpts
-    opts = {
-      notify_on_error = false,
-      format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          return nil
-        else
-          return {
-            timeout_ms = 500,
-            lsp_format = 'fallback',
-          }
-        end
-      end,
-      formatters_by_ft = {
-        lua = { 'stylua' },
-        c = { 'clang-format' },
-        cpp = { 'clang-format' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
-      },
-    },
+    config = function()
+      require('conform').setup {
+        notify_on_error = false,
+        format_on_save = function(bufnr)
+          local disable_filetypes = { c = true, cpp = true }
+          if disable_filetypes[vim.bo[bufnr].filetype] then
+            return nil
+          else
+            return { timeout_ms = 500, lsp_format = 'fallback' }
+          end
+        end,
+        formatters = {
+          ['clang-format'] = {
+            prepend_args = {
+              '--style={BasedOnStyle: LLVM, BreakBeforeBraces: Allman, IndentWidth: 3, TabWidth: 3, UseTab: Never, AllowShortFunctionsOnASingleLine: None, AllowShortIfStatementsOnASingleLine: Never, AllowShortLoopsOnASingleLine: false}',
+            },
+          },
+        },
+        formatters_by_ft = {
+          lua = { 'stylua' },
+          c = { 'clang-format' },
+          cpp = { 'clang-format' },
+        },
+      }
+      vim.api.nvim_create_user_command('Format', function() require('conform').format { async = true, lsp_format = 'fallback' } end, { desc = 'Format buffer' })
+    end,
   },
-
   { -- Autocompletion
     'saghen/blink.cmp',
     event = 'VimEnter',
