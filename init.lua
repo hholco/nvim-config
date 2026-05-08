@@ -122,23 +122,9 @@ vim.o.showmode = false
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
 
--- WSL clipboard support
-vim.g.clipboard = {
-  name = 'win32yank',
-  copy = {
-    ['+'] = 'win32yank.exe -i --crlf',
-    ['*'] = 'win32yank.exe -i --crlf',
-  },
-  paste = {
-    ['+'] = 'win32yank.exe -o --lf',
-    ['*'] = 'win32yank.exe -o --lf',
-  },
-  cache_enabled = 0,
-}
 
 vim.schedule(function() vim.opt.clipboard = 'unnamedplus' end)
 
-vim.schedule(function() vim.o.clipboard = 'unnamedplus' end)
 
 -- Enable break indent
 vim.o.breakindent = true
@@ -296,7 +282,7 @@ require('lazy').setup({
   -- NOTE: Plugins can be added via a link or github org/name. To run setup automatically, use `opts = {}`
   -- COMMENTED THIS OUT FOR TAB INDENTS
   { 'NMAC427/guess-indent.nvim', opts = { auto_cmd = true, indent_fallback = 2 } },
-
+  
   -- Alternatively, use `config = function() ... end` for full control over the configuration.
   -- If you prefer to call `setup` explicitly, use:
   --    {
@@ -328,6 +314,7 @@ require('lazy').setup({
       },
     },
   },
+
 
   -- nvim neogit
   {
@@ -518,6 +505,8 @@ require('lazy').setup({
         end,
       })
 
+
+
       -- Override default behavior and theme when searching
       vim.keymap.set('n', '<leader>/', function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
@@ -670,9 +659,9 @@ require('lazy').setup({
         clangd = {
           init_options = {
             fallbackFlags = { '-std=c++23' },
+            fallbackStyle = "{ BasedOnStyle: LLVM, BreakBeforeBraces: Allman }",
           },
         },
-        ['clang-format'] = {},
 
         -- gopls = {},
         -- pyright = {},
@@ -737,45 +726,62 @@ require('lazy').setup({
     end,
   },
 
-  { -- Autoformat
-    'stevearc/conform.nvim',
-    event = { 'BufWritePre' },
-    cmd = { 'ConformInfo', 'Format' },
-    keys = {
-      {
-        '<leader>f',
-        function() require('conform').format { async = true, lsp_format = 'fallback' } end,
-        mode = '',
-        desc = '[F]ormat buffer',
-      },
+{ -- Autoformat
+  'stevearc/conform.nvim',
+  event = { 'BufWritePre' },
+  cmd = { 'ConformInfo', 'Format' },
+  keys = {
+    {
+      '<leader>f',
+      function() require('conform').format { async = true, lsp_format = 'fallback' } end,
+      mode = '',
+      desc = '[F]ormat buffer',
     },
-    config = function()
-      require('conform').setup {
-        notify_on_error = false,
-        format_on_save = function(bufnr)
-          local disable_filetypes = { c = true, cpp = true }
-          if disable_filetypes[vim.bo[bufnr].filetype] then
-            return nil
-          else
-            return { timeout_ms = 500, lsp_format = 'fallback' }
-          end
-        end,
-        formatters = {
-          ['clang-format'] = {
-            prepend_args = {
-              '--style={BasedOnStyle: LLVM, BreakBeforeBraces: Allman, IndentWidth: 3, TabWidth: 3, UseTab: Never, AllowShortFunctionsOnASingleLine: None, AllowShortIfStatementsOnASingleLine: Never, AllowShortLoopsOnASingleLine: false}',
-            },
+  },
+
+  config = function()
+    require('conform').setup {
+      notify_on_error = false,
+
+      format_on_save = function(bufnr)
+        local disable_filetypes = { c = true, cpp = true }
+        if disable_filetypes[vim.bo[bufnr].filetype] then
+          return nil
+        else
+          return { timeout_ms = 500, lsp_format = 'fallback' }
+        end
+      end,
+
+      formatters = {
+        ['clang-format'] = {
+          prepend_args = {
+            '--style={BasedOnStyle: LLVM, BreakBeforeBraces: Allman, IndentWidth: 3, TabWidth: 3, UseTab: Never, AllowShortFunctionsOnASingleLine: None, AllowShortIfStatementsOnASingleLine: Never, AllowShortLoopsOnASingleLine: false}',
           },
         },
-        formatters_by_ft = {
-          lua = { 'stylua' },
-          c = { 'clang-format' },
-          cpp = { 'clang-format' },
-        },
-      }
-      vim.api.nvim_create_user_command('Format', function() require('conform').format { async = true, lsp_format = 'fallback' } end, { desc = 'Format buffer' })
-    end,
-  },
+      },
+
+      formatters_by_ft = {
+        lua = { 'stylua' },
+        c = { 'clang-format' },
+        cpp = { 'clang-format' },
+      },
+    }
+
+-- Create the :Format command
+    vim.api.nvim_create_user_command('Format', function(args)
+      local range = nil
+      if args.count ~= -1 then
+        local end_line = vim.api.nvim_buf_get_lines(0, args.line2 - 1, args.line2, true)[1]
+        range = {
+          start = { args.line1, 0 },
+          ['end'] = { args.line2, end_line:len() },
+        }
+      end
+      require('conform').format { async = true, lsp_format = 'fallback', range = range }
+    end, { range = true })
+  end,
+},
+
   { -- Autocompletion
     'saghen/blink.cmp',
     event = 'VimEnter',

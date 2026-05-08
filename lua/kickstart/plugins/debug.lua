@@ -32,6 +32,7 @@ return {
     { '<F1>', function() require('dap').step_into() end, desc = 'Debug: Step Into' },
     { '<F2>', function() require('dap').step_over() end, desc = 'Debug: Step Over' },
     { '<F3>', function() require('dap').step_out() end, desc = 'Debug: Step Out' },
+    --{ '<F8>', function() require('dap').terminate() end, desc = 'Debug: Terminate' },
     { '<leader>b', function() require('dap').toggle_breakpoint() end, desc = 'Debug: Toggle Breakpoint' },
     { '<leader>B', function() require('dap').set_breakpoint(vim.fn.input 'Breakpoint condition: ') end, desc = 'Debug: Set Breakpoint' },
     -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
@@ -110,19 +111,43 @@ return {
       },
     }
 
-    dap.configurations.cpp = {
+dap.configurations.cpp = {
       {
         name = 'Launch',
         type = 'codelldb',
         request = 'launch',
         program = function() return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file') end,
+        args = function()
+          return { vim.fn.input('Path to jack file: ', vim.fn.getcwd() .. '/', 'file') }
+        end,
         cwd = '${workspaceFolder}',
-        stopOnEntry = false,
+        stopOnEntry = true,
+        sourceLanguages = { 'c', '' },
         sourceMap = {
           ['.'] = vim.fn.getcwd(),
         },
       },
     }
-    dap.configurations.c = dap.configurations.cpp
+
+    -- STM32 debug configuration
+    dap.adapters.gdb = {
+      type = "executable",
+      command = "gdb-multiarch",
+      args = {
+        "--interpreter=dap",
+        "--eval-command", "target remote localhost:3333",
+      },
+    }
+
+    dap.configurations.c = {
+      {
+        name        = "STM32 Debug",
+        type        = "gdb",
+        request     = "launch",
+        program     = vim.fn.getcwd() .. "/build/firmware.elf",
+        cwd         = "${workspaceFolder}",
+        stopAtEntry = true,
+      },
+    }
   end,
 }
