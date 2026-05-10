@@ -108,11 +108,14 @@ vim.o.number = true
 vim.o.tabstop = 3
 vim.o.shiftwidth = 3
 vim.o.softtabstop = 3
-vim.o.expandtab = true
+vim.o.expandtab = false
 vim.o.smartindent = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
+
+-- Disable modelines (prevents CubeMX-generated files from triggering modeline errors)
+vim.o.modeline = false
 
 -- Don't show the mode, since it's already in the status line
 vim.o.showmode = false
@@ -181,12 +184,6 @@ vim.o.confirm = true
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
--- automatically run make and run executable associated
-vim.keymap.set('n', '<F4>', function()
-  vim.cmd 'write'
-  vim.cmd 'split | terminal cd %:p:h && make && ./main'
-end, { desc = 'Build and run in terminal split' })
-
 -- Diagnostic Config & Keymaps
 -- See :help vim.diagnostic.Opts
 vim.diagnostic.config {
@@ -229,6 +226,12 @@ vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower win
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 vim.keymap.set('i', '<C-Z>', '<C-O>u', { desc = 'Undo in insert mode' })
 vim.keymap.set('n', '<C-Z>', 'u', { desc = 'Undo in normal mode' })
+
+--keymaps for adjusting ctrl left and right arrow key behavior
+vim.keymap.set('n', '<C-Right>', 'w', { desc = 'Jump word right' })
+vim.keymap.set('n', '<C-Left>', 'b', { desc = 'Jump word left' })
+vim.keymap.set('i', '<C-Right>', '<C-o>w', { desc = 'Jump word right in insert mode' })
+vim.keymap.set('i', '<C-Left>', '<C-o>b', { desc = 'Jump word left in insert mode' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -458,7 +461,7 @@ require('lazy').setup({
       local terminal_buf = -1
       local terminal_win = -1
 
-      vim.keymap.set('n', 'N', function()
+      vim.keymap.set('n', '<leader>tt', function()
         if vim.api.nvim_win_is_valid(terminal_win) then
           -- Close it
           vim.api.nvim_win_close(terminal_win, true)
@@ -838,6 +841,8 @@ require('lazy').setup({
         --
         -- See :h blink-cmp-config-keymap for defining your own keymap
         preset = 'enter',
+        ['<Tab>'] = {}, --disable tab and S-tab to stop jumping to last complete on indent attempt
+        ['<S-Tab>'] = {},
 
         -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
         --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps

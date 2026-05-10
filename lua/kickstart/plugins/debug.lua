@@ -139,15 +139,15 @@ dap.configurations.cpp = {
       },
     }
 
-    dap.configurations.c = {
-      {
-        name        = "STM32 Debug",
-        type        = "gdb",
-        request     = "launch",
-        program     = vim.fn.getcwd() .. "/build/firmware.elf",
-        cwd         = "${workspaceFolder}",
-        stopAtEntry = true,
-      },
-    }
+dap.configurations.c = {
+  {
+    name        = "STM32 Debug",
+    type        = "gdb",
+    request     = "launch",
+    program     = function() return vim.fn.getcwd() .. "/build/" .. vim.fn.fnamemodify(vim.fn.getcwd(), ":t") .. ".elf" end,
+    cwd         = "${workspaceFolder}",
+    stopAtEntry = true,
+  },
+}
   end,
 }
